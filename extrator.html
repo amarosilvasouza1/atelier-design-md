@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atelier — extrator de sistemas de design</title>
+<meta name="description" content="Cole uma URL e receba um DESIGN.md com a estrutura, as cores, a tipografia e as regras visuais do site analisado.">
+<meta name="theme-color" content="#0B0A09">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' fill='%230B0A09'/%3E%3Cpath d='M12 3v18M3 12h18M6.2 6.2l11.6 11.6M17.8 6.2L6.2 17.8' stroke='%23D4552A' stroke-width='1.4'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Inter+Tight:wght@300..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="extrator.css">
+</head>
+<body class="x-body">
+<header class="topbar">
+  <a class="brand" href="index.html" aria-label="Atelier, estúdio">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M12 2.5v19M2.5 12h19M5.3 5.3l13.4 13.4M18.7 5.3L5.3 18.7"/></svg>
+    <span class="brand-name">Atelier</span>
+    <span class="brand-sub">laboratório de identidade</span>
+  </a>
+  <nav class="x-modes" aria-label="Ferramentas">
+    <a href="index.html">Estúdio</a>
+    <a href="extrator.html" aria-current="page">Extrator</a>
+  </nav>
+  <div class="topbar-right">
+    <span class="status"><i></i>Local · sem conta</span>
+  </div>
+</header>
+
+<main class="x-main">
+  <section class="x-hero">
+    <div class="x-hero-copy">
+      <p class="kicker">Extrator de sistemas</p>
+      <h1>Cole uma URL.<br>Saia com o <em>sistema</em>.</h1>
+      <p class="x-lede">Abro a página num Chrome real, leio o DOM renderizado e devolvo um <strong>DESIGN.md</strong> com estrutura, cores, tipografia e regras — pronto para o próximo projeto.</p>
+      <form id="xForm" class="x-form" novalidate>
+        <label class="x-url"><span class="sr-only">URL do site</span>
+          <input id="xUrl" type="text" inputmode="url" placeholder="https://stripe.com" autocomplete="url" spellcheck="false" aria-describedby="xFine">
+        </label>
+        <button class="btn btn-primary" id="xGo" type="submit">Analisar página</button>
+      </form>
+      <div class="x-examples" id="xExamples" aria-label="Sugestões de sites"></div>
+      <p class="x-fine" id="xFine">Páginas públicas, sem login. O Chrome roda nesta máquina; só o HTML/CSS do site analisado é baixado.</p>
+    </div>
+    <aside class="x-aside" aria-label="O que o extrator lê">
+      <p class="kicker">O que sai do outro lado</p>
+      <ol class="x-steps">
+        <li><b>01</b><span><strong>Arquitetura</strong> cabeçalho, hero, seções, ações e rodapé em ordem.</span></li>
+        <li><b>02</b><span><strong>Tokens</strong> fundo, tinta, apoio, acento, linhas e contraste real.</span></li>
+        <li><b>03</b><span><strong>Tipografia</strong> famílias, escala, pesos, entrelinha e tracking.</span></li>
+        <li><b>04</b><span><strong>Regras</strong> o que repetir, o que evitar e um prompt de implementação.</span></li>
+      </ol>
+    </aside>
+  </section>
+
+  <div id="xError" class="x-error" hidden role="alert"></div>
+
+  <section id="xLoading" class="x-loading" hidden aria-live="polite">
+    <div class="x-spinner" aria-hidden="true"></div>
+    <p><strong>Abrindo e medindo a página</strong> <span id="xTimer">0 s</span></p>
+    <p class="x-loading-note">O Chrome carrega o site, executa o JavaScript e lê os estilos computados. Costuma levar de 6 a 20 segundos.</p>
+  </section>
+
+  <section id="xEmpty" class="x-empty">
+    <article><b>01</b><h2>Estrutura</h2><p>Ordem dos blocos, títulos, navegação, CTAs e formulários — a arquitetura de informação que você pode reaproveitar.</p></article>
+    <article><b>02</b><h2>Linguagem</h2><p>Paleta com papéis e contraste WCAG, famílias tipográficas, escala, raio, sombras e movimento.</p></article>
+    <article><b>03</b><h2>Entrega</h2><p>DESIGN.md, tokens.css e prompt em português, com fallbacks para fontes proprietárias. Copie ou baixe.</p></article>
+  </section>
+
+  <section id="xResult" class="x-result" hidden>
+    <div class="x-report">
+      <article class="x-site">
+        <div class="x-shot"><img id="xShot" alt="Captura do site analisado" loading="lazy"></div>
+        <div class="x-site-body">
+          <p class="kicker" id="xHost">—</p>
+          <h2 id="xTitle">—</h2>
+          <p id="xDesc"></p>
+          <div class="x-chips" id="xChips"></div>
+        </div>
+      </article>
+
+      <section class="x-block">
+        <div class="x-block-head"><h2>Paleta observada</h2><span id="xMode">claro</span></div>
+        <div class="x-swatches" id="xPalette"></div>
+        <p class="x-note" id="xContrast"></p>
+      </section>
+
+      <section class="x-block">
+        <div class="x-block-head"><h2>Tipografia</h2><span id="xFonts"></span></div>
+        <div class="x-specimen" id="xSpecimen">
+          <p class="x-spec-kicker" id="xSpecKicker">Aa</p>
+          <p class="x-spec-title" id="xSpecTitle">Uma frase de exemplo no tipo deste site.</p>
+          <p class="x-spec-base" id="xSpecBase">Corpo de texto no tamanho original, para sentir a proporção entre título e leitura.</p>
+          <p class="x-spec-meta" id="xSpecMeta"></p>
+        </div>
+      </section>
+
+      <section class="x-block">
+        <div class="x-block-head"><h2>Estrutura da página</h2><span id="xSections"></span></div>
+        <ol class="x-outline" id="xOutline"></ol>
+      </section>
+
+      <section class="x-metrics" id="xMetrics" aria-label="Métricas"></section>
+    </div>
+
+    <aside class="x-export" aria-label="Arquivos gerados">
+      <div class="x-export-head">
+        <p class="kicker">Exportar</p>
+        <h2>Pronto para o próximo projeto</h2>
+        <p>O arquivo descreve o sistema visual. Troque textos, marca e imagens.</p>
+      </div>
+      <div class="x-tabs" role="tablist" aria-label="Arquivos">
+        <button type="button" role="tab" aria-selected="true" data-tab="design">DESIGN.md</button>
+        <button type="button" role="tab" aria-selected="false" data-tab="tokens">tokens.css</button>
+        <button type="button" role="tab" aria-selected="false" data-tab="prompt">Prompt</button>
+      </div>
+      <pre class="x-code" id="xCode" tabindex="0"><code id="xCodeText"></code></pre>
+      <div class="x-export-foot">
+        <span id="xFile">design.md</span>
+        <div class="x-actions">
+          <button class="btn btn-ghost" id="xCopy" type="button">Copiar</button>
+          <button class="btn btn-primary" id="xDownload" type="button">Baixar</button>
+        </div>
+      </div>
+    </aside>
+  </section>
+</main>
+
+<div class="toast" id="xToast" role="status" aria-live="polite"></div>
+<script src="extrator.js"></script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+node_modules/
+shots/*.png
+!shots/.gitkeep
+*.tmp
+teste-*
+.DS_Store
+Thumbs.db

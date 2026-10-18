@@ -1,0 +1,15 @@
+{
+  "name": "atelier-design-md",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Estúdio de identidade visual e extrator de DESIGN.md a partir de qualquer URL, com Chrome headless.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": ["design-system", "design-md", "extractor", "chrome", "cdp", "tokens"],
+  "license": "MIT"
+}

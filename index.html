@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atelier — laboratório de identidade editorial</title>
+<meta name="description" content="Componha paleta, tipografia e proporção, veja o sistema ao vivo e exporte DESIGN.md, tokens CSS e um prompt para IA.">
+<meta name="theme-color" content="#0B0A09">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' fill='%230B0A09'/%3E%3Cpath d='M12 3v18M3 12h18M6.2 6.2l11.6 11.6M17.8 6.2L6.2 17.8' stroke='%23D4552A' stroke-width='1.4'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Instrument+Serif:ital@0;1&family=Newsreader:ital,opsz,wght@0,6..72,200..600;1,6..72,200..600&family=Inter+Tight:wght@300..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="./" aria-label="Atelier, início">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M12 2.5v19M2.5 12h19M5.3 5.3l13.4 13.4M18.7 5.3L5.3 18.7"/></svg>
+    <span class="brand-name">Atelier</span>
+    <span class="brand-sub">laboratório de identidade</span>
+  </a>
+  <div class="topbar-right">
+    <span class="status"><i></i>Local · sem conta</span>
+    <a class="btn btn-ghost" href="extrator.html">Extrair URL</a>
+    <button class="btn btn-primary" id="openExport" type="button">Exportar sistema <span aria-hidden="true">↗</span></button>
+  </div>
+</header>
+
+<main class="workspace">
+  <section class="stage" aria-label="Prévia ao vivo do sistema">
+    <div class="stage-bar">
+      <span class="stage-label"><i class="dot" aria-hidden="true"></i>Prévia ao vivo <span id="viewportLabel">1080 px</span></span>
+      <div class="devices" role="group" aria-label="Largura da prévia">
+        <button type="button" class="device is-active" data-device="desktop" aria-pressed="true">Desktop</button>
+        <button type="button" class="device" data-device="mobile" aria-pressed="false">Celular</button>
+      </div>
+    </div>
+    <div class="frame">
+      <div class="preview" id="preview">
+        <article class="specimen" id="specimen" lang="pt-BR" tabindex="0" role="region" aria-label="Prévia da página de exemplo — role para ver o sistema completo">
+          <header class="sp-nav">
+            <span class="sp-wordmark" data-brand>Casa Verbo</span>
+            <nav class="sp-links" aria-label="Navegação de exemplo"><span>Manifesto</span><span>Ateliê</span><span>Arquivo</span><span>Contato</span></nav>
+            <span class="sp-navcta">Agendar visita</span>
+          </header>
+
+          <section class="sp-hero">
+            <p class="sp-eyebrow"><span class="sp-index">01</span><span class="sp-rule" aria-hidden="true"></span>Ateliê de criação — Fortaleza</p>
+            <h2 class="sp-title">Toda marca começa como uma <em>pergunta</em>.</h2>
+            <p class="sp-lede" data-tagline>Identidade, embalagem e direção de arte para negócios que preferem ser lembrados a serem vistos.</p>
+            <div class="sp-actions">
+              <span class="sp-btn">Começar conversa</span>
+              <span class="sp-link">Ver o arquivo ↗</span>
+            </div>
+            <dl class="sp-figures">
+              <div><dt>Anos de ateliê</dt><dd>07</dd></div>
+              <div><dt>Marcas vivas</dt><dd>48</dd></div>
+              <div><dt>Prêmios de design</dt><dd>03</dd></div>
+            </dl>
+          </section>
+
+          <section class="sp-manifesto">
+            <p class="sp-eyebrow"><span class="sp-index">02</span><span class="sp-rule" aria-hidden="true"></span>Manifesto</p>
+            <div class="sp-split">
+              <h2 class="sp-h2">Menos ruído.<br>Mais <em>caráter</em>.</h2>
+              <div class="sp-cols">
+                <p>Trabalhamos com poucos clientes por ano. Cada projeto começa com uma semana de escuta e termina com um sistema que a equipe do cliente consegue manter sem nós.</p>
+                <p>Se a marca precisa gritar, o desenho ainda não está pronto. Essa é a régua que usamos para aprovar — ou refazer — cada peça.</p>
+                <ol class="sp-principles">
+                  <li><span>/01</span>Uma ideia antes de uma estética.</li>
+                  <li><span>/02</span>Tipografia é argumento, não enfeite.</li>
+                  <li><span>/03</span>O sistema sobrevive ao primeiro desvio.</li>
+                </ol>
+              </div>
+            </div>
+          </section>
+
+          <section class="sp-services">
+            <p class="sp-eyebrow"><span class="sp-index">03</span><span class="sp-rule" aria-hidden="true"></span>O que fazemos</p>
+            <div class="sp-cards">
+              <article><span class="sp-num">/01</span><h3>Identidade</h3><p>Naming, marca, tipografia e um manual que cabe na mesa de quem usa.</p><span class="sp-link">Detalhes</span></article>
+              <article><span class="sp-num">/02</span><h3>Embalagem</h3><p>Estrutura, rótulo e presença de prateleira para produtos que competem por atenção.</p><span class="sp-link">Detalhes</span></article>
+              <article><span class="sp-num">/03</span><h3>Direção de arte</h3><p>Campanha, fotografia e ritmo visual para lançamentos e temporadas.</p><span class="sp-link">Detalhes</span></article>
+            </div>
+          </section>
+
+          <figure class="sp-quote">
+            <blockquote>“Uma marca não é o que ela diz de si. É o que sobra quando ninguém está olhando.”</blockquote>
+            <figcaption>Helena Vasques — sócia-fundadora</figcaption>
+          </figure>
+
+          <footer class="sp-footer">
+            <div>
+              <span class="sp-wordmark" data-brand>Casa Verbo</span>
+              <p>Rua das Flores, 128 — Fortaleza, CE<br>seg a sex, 9h às 18h</p>
+            </div>
+            <span class="sp-btn sp-btn-accent">Falar com o ateliê</span>
+          </footer>
+        </article>
+        <div class="grain" aria-hidden="true"></div>
+      </div>
+    </div>
+    <p class="stage-hint">Landing page de exemplo gerada com os tokens escolhidos. Role dentro da prévia para ver o sistema inteiro.</p>
+  </section>
+
+  <aside class="controls" aria-label="Controles do sistema">
+    <div class="controls-head">
+      <p class="kicker">Sistema em construção</p>
+      <h1>Componha a identidade.</h1>
+      <p class="controls-lede">Ajuste paleta, tipografia e proporção. A prévia e os arquivos de exportação acompanham cada escolha.</p>
+    </div>
+
+    <form id="form" novalidate>
+      <section class="group">
+        <div class="group-title"><span>Conteúdo</span><b>01</b></div>
+        <label class="field"><span>Nome da marca</span><input id="brand" maxlength="24" autocomplete="off" spellcheck="false" value="Casa Verbo"></label>
+        <label class="field"><span>Promessa</span><textarea id="tagline" rows="2" maxlength="130">Identidade, embalagem e direção de arte para negócios que preferem ser lembrados a serem vistos.</textarea></label>
+      </section>
+
+      <fieldset class="group">
+        <legend class="sr-only">Paleta</legend>
+        <div class="group-title"><span>Paleta</span><b>02</b></div>
+        <div class="radio-grid" id="palettes"></div>
+        <p class="note" id="contrastNote"></p>
+      </fieldset>
+
+      <fieldset class="group">
+        <legend class="sr-only">Voz tipográfica</legend>
+        <div class="group-title"><span>Voz tipográfica</span><b>03</b></div>
+        <div class="type-list" id="types"></div>
+      </fieldset>
+
+      <fieldset class="group">
+        <legend class="sr-only">Proporção</legend>
+        <div class="group-title"><span>Proporção</span><b>04</b></div>
+        <div class="segmented" id="scales">
+          <label><input type="radio" name="scale" value="compacta"><span>Compacta</span></label>
+          <label><input type="radio" name="scale" value="equilibrada" checked><span>Equilibrada</span></label>
+          <label><input type="radio" name="scale" value="generosa"><span>Generosa</span></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="group">
+        <legend class="sr-only">Acabamento</legend>
+        <div class="group-title"><span>Acabamento</span><b>05</b></div>
+        <div class="switch-row">
+          <div><strong>Cantos suaves</strong><span>Arestas de 6 px em cartões e botões.</span></div>
+          <label class="switch"><input type="checkbox" id="corners"><span aria-hidden="true"></span><em class="sr-only">Cantos suaves</em></label>
+        </div>
+        <div class="switch-row">
+          <div><strong>Textura de papel</strong><span>Grão sutil sobre toda a página.</span></div>
+          <label class="switch"><input type="checkbox" id="grain" checked><span aria-hidden="true"></span><em class="sr-only">Textura de papel</em></label>
+        </div>
+      </fieldset>
+    </form>
+
+    <div class="controls-foot">
+      <div class="foot-actions">
+        <button class="btn btn-ghost" id="surprise" type="button">Surpreender-me</button>
+        <button class="btn btn-quiet" id="reset" type="button">Restaurar</button>
+      </div>
+      <p class="note">Tudo roda localmente neste navegador. Nenhum dado sai daqui.</p>
+    </div>
+  </aside>
+</main>
+
+<dialog id="exportDialog" class="export" aria-labelledby="exportTitle">
+  <div class="export-top">
+    <div><p class="kicker">Exportar</p><h2 id="exportTitle">Sistema de identidade</h2></div>
+    <button class="icon-btn" id="closeExport" type="button" aria-label="Fechar">×</button>
+  </div>
+  <div class="tabs" role="tablist" aria-label="Arquivos gerados">
+    <button role="tab" type="button" aria-selected="true" data-tab="design">DESIGN.md</button>
+    <button role="tab" type="button" aria-selected="false" data-tab="tokens">tokens.css</button>
+    <button role="tab" type="button" aria-selected="false" data-tab="prompt">Prompt</button>
+  </div>
+  <div class="export-body"><pre id="exportCode" tabindex="0"><code></code></pre></div>
+  <div class="export-foot">
+    <span class="export-meta" id="exportMeta">DESIGN.md</span>
+    <div class="foot-actions">
+      <button class="btn btn-ghost" id="copyExport" type="button">Copiar</button>
+      <button class="btn btn-primary" id="downloadExport" type="button">Baixar arquivo</button>
+    </div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="app.js"></script>
+</body>
+</html>
