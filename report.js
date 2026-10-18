@@ -139,6 +139,24 @@ function buildDesign(p) {
   add("3. " + (c.contrast.accent >= 4.5 ? "O acento atual passa AA para texto; pode sustentar rotulos pequenos." : "O acento atual nao passa AA para texto pequeno: use-o em blocos, bordas ou botoes com texto --color-on-accent."));
   add("4. " + (c.dark ? "Em tema escuro, eleve a superficie em vez de clarear a tinta." : "Em tema claro, crie profundidade com superficie e hairline, nao com sombras pesadas."));
   add("");
+  if (p.dark && p.dark.supported && p.dark.palette) {
+    var dark = p.dark.palette;
+    add("## 3.1 Tema escuro");
+    add("");
+    add("O site responde a **prefers-color-scheme: dark**. Tokens alternativos:");
+    add("");
+    add("| Token | Hex | Papel | Contraste |");
+    add("| --- | --- | --- | --- |");
+    add("| **--color-bg** | " + dark.bg + " | fundo | - |");
+    add("| **--color-surface** | " + dark.surface + " | superficie | - |");
+    add("| **--color-ink** | " + dark.ink + " | texto | " + num(dark.contrast.ink) + ":1 |");
+    add("| **--color-muted** | " + dark.muted + " | apoio | " + num(dark.contrast.muted) + ":1 |");
+    add("| **--color-accent** | " + dark.accent + " | acento | " + num(dark.contrast.accent) + ":1 |");
+    add("| **--color-line** | " + dark.line + " | divisores | - |");
+    add("");
+    add("Aplique com prefers-color-scheme: dark ou um atributo data-theme=\"dark\". O arquivo **tokens.dark.css** acompanha a exportacao.");
+    add("");
+  }
   add("## 4. Tipografia");
   add("");
   add("| Papel | Familia | Tamanho | Peso | Entrelinha | Tracking |");
@@ -164,6 +182,29 @@ function buildDesign(p) {
   add("- **Unidade sugerida:** 4 px, com escala 8 / 16 / 24 / 32 / 48 / 64.");
   add("- **Grade:** " + (p.layout.grid > 10 ? "grid e o motor principal; mantenha colunas explicitas e gaps consistentes." : "flex e o motor principal; mantenha alinhamentos por linha de base."));
   add("");
+  var resp = (p.responsive || []).filter(function (s) { return s && s.width; });
+  if (resp.length > 1) {
+    add("## 5.1 Comportamento responsivo");
+    add("");
+    add("| Largura | H1 | Container | Links no menu | Grid | Flex |");
+    add("| --- | --- | --- | --- | --- | --- |");
+    resp.forEach(function (s) {
+      add("| " + s.width + "px | " + (s.h1 || "-") + " | " + (s.container || "fluido") + " | " + (s.navLinks || 0) + " | " + (s.grid || 0) + " | " + (s.flex || 0) + " |");
+    });
+    add("");
+    var small = resp[0];
+    var large = resp[resp.length - 1];
+    if ((small.navLinks || 0) < (large.navLinks || 0)) {
+      add("- **Navegacao:** " + (large.navLinks || 0) + " links visiveis em " + large.width + " px caem para " + (small.navLinks || 0) + " em " + small.width + " px. Preveja menu compacto.");
+    }
+    if (small.h1 && large.h1 && small.h1 !== large.h1) {
+      add("- **Manchete:** " + small.h1 + " em " + small.width + " px e " + large.h1 + " em " + large.width + " px. Use clamp() entre os dois valores.");
+    }
+    if (small.container && large.container) {
+      add("- **Container:** " + (small.container === large.container ? "fixo em " + small.container : small.container + " em " + small.width + " px e " + large.container + " em " + large.width + " px") + ".");
+    }
+    add("");
+  }
   add("## 6. Forma e profundidade");
   add("");
   add("- **Raio dominante:** " + p.shape.radius + (p.shape.radii.length > 1 ? " (variacoes: " + p.shape.radii.map(function (r) { return r.value; }).slice(0, 4).join(", ") + ")" : "") + ".");
@@ -326,6 +367,9 @@ function buildPrompt(p) {
   add("- Titulos em " + t.display + " (fallback " + fallbackFont(t.display) + "); corpo em " + t.body + " (fallback " + fallbackFont(t.body) + ").");
   add("- Escala: H1 " + px(t.h1.size) + " / H2 " + px(t.h2.size) + " / H3 " + px(t.h3.size) + " / corpo " + px(t.base.size) + ".");
   add("- Container " + (p.layout.container || "1200px") + "; raio " + p.shape.radius + "; respiro de secao " + (p.layout.sectionPad || "64px") + ".");
+  if (p.dark && p.dark.supported && p.dark.palette) {
+    add("- Tema escuro: fundo " + p.dark.palette.bg + ", tinta " + p.dark.palette.ink + ", acento " + p.dark.palette.accent + "; aplique tokens.dark.css.");
+  }
   add("");
   add("Estrutura:");
   structure(p).forEach(function (s) { add("- " + s.replace(/\*\*/g, "")); });
@@ -339,4 +383,37 @@ function buildPrompt(p) {
   return L.join("\n") + "\n";
 }
 
-module.exports = { buildDesign: buildDesign, buildTokens: buildTokens, buildPrompt: buildPrompt, slug: slug };
+function darkVars(d, indent) {
+  return [
+    indent + "--color-bg: " + d.bg + ";",
+    indent + "--color-surface: " + d.surface + ";",
+    indent + "--color-ink: " + d.ink + ";",
+    indent + "--color-muted: " + d.muted + ";",
+    indent + "--color-accent: " + d.accent + ";",
+    indent + "--color-on-accent: " + d.onAccent + ";",
+    indent + "--color-line: " + d.line + ";"
+  ].join("\n");
+}
+
+function buildDarkTokens(p) {
+  if (!p.dark || !p.dark.supported || !p.dark.palette) { return ""; }
+  var d = p.dark.palette;
+  var L = [];
+  function add(line) { L.push(line); }
+  add("/* " + (p.siteName || p.title) + " - tema escuro observado */");
+  add("/* Gerado pelo Atelier a partir de " + (p.finalUrl || p.url) + " */");
+  add("");
+  add("@media (prefers-color-scheme: dark) {");
+  add("  :root {");
+  add(darkVars(d, "    "));
+  add("  }");
+  add("}");
+  add("");
+  add("[data-theme=\"dark\"] {");
+  add(darkVars(d, "  "));
+  add("}");
+  add("");
+  return L.join("\n") + "\n";
+}
+
+module.exports = { buildDesign: buildDesign, buildTokens: buildTokens, buildDarkTokens: buildDarkTokens, buildPrompt: buildPrompt, slug: slug };

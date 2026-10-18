@@ -25,6 +25,9 @@ function help() {
     "      --tokens      inclui tokens.css depois do DESIGN.md na saida",
     "      --prompt      inclui o prompt depois do DESIGN.md na saida",
     "      --no-shot     nao copia a captura ao usar --out",
+    "      --refresh     ignora o cache de 24 h",
+    "      --fast        pula responsivo e tema escuro",
+    "      --no-responsive / --no-dark",
     "  -q, --quiet       nao escreve progresso no stderr",
     "",
     "Exemplos:",
@@ -40,7 +43,7 @@ function help() {
 function parseArgs(argv) {
   const args = argv.slice(2);
   const command = args[0] || "help";
-  const opts = { out: "", json: false, tokens: false, prompt: false, noShot: false, quiet: false, port: "" };
+  const opts = { out: "", json: false, tokens: false, prompt: false, noShot: false, quiet: false, port: "", refresh: false, responsive: true, dark: true };
   const rest = [];
   for (let i = 1; i < args.length; i += 1) {
     const arg = args[i];
@@ -49,6 +52,10 @@ function parseArgs(argv) {
     else if (arg === "--tokens") { opts.tokens = true; }
     else if (arg === "--prompt") { opts.prompt = true; }
     else if (arg === "--no-shot") { opts.noShot = true; }
+    else if (arg === "--refresh") { opts.refresh = true; }
+    else if (arg === "--no-responsive") { opts.responsive = false; }
+    else if (arg === "--no-dark") { opts.dark = false; }
+    else if (arg === "--fast") { opts.responsive = false; opts.dark = false; }
     else if (arg === "-q" || arg === "--quiet") { opts.quiet = true; }
     else if (arg === "--port") { opts.port = args[i + 1] || ""; i += 1; }
     else if (arg === "-h" || arg === "--help") { opts.help = true; }
@@ -65,11 +72,12 @@ function log(opts, message) {
 async function extract(url, opts) {
   if (!url) { help(); process.exitCode = 1; return; }
   log(opts, "Abrindo " + url + " no Chrome headless...");
-  const result = await analyzer.analyze(url);
+  const result = await analyzer.analyze(url, { refresh: opts.refresh, responsive: opts.responsive, dark: opts.dark });
   const profile = result.profile;
   const design = report.buildDesign(profile);
   const tokens = report.buildTokens(profile);
   const prompt = report.buildPrompt(profile);
+  const darkTokens = report.buildDarkTokens(profile);
   const slug = report.slug(profile.siteName || profile.title);
 
   let files = null;
@@ -85,10 +93,14 @@ async function extract(url, opts) {
     };
     fs.writeFileSync(paths.design, design, "utf8");
     fs.writeFileSync(paths.tokens, tokens, "utf8");
+    if (darkTokens) {
+      paths.dark = path.join(dir, "tokens.dark.css");
+      fs.writeFileSync(paths.dark, darkTokens, "utf8");
+    }
     fs.writeFileSync(paths.prompt, prompt, "utf8");
     fs.writeFileSync(paths.profile, JSON.stringify(profile, null, 2), "utf8");
-    if (!opts.noShot && result.shot) {
-      const source = path.join(ROOT, result.shot);
+    if (!opts.noShot && result.shotPath) {
+      const source = result.shotPath;
       if (fs.existsSync(source)) {
         fs.copyFileSync(source, paths.screenshot);
       } else {
@@ -102,6 +114,7 @@ async function extract(url, opts) {
   if (opts.json) {
     process.stdout.write(JSON.stringify({
       ok: true,
+      cached: result.cached === true,
       url: profile.finalUrl,
       title: profile.title,
       slug: slug,
@@ -109,6 +122,7 @@ async function extract(url, opts) {
       profile: profile,
       design: design,
       tokens: tokens,
+      darkTokens: darkTokens || undefined,
       prompt: prompt
     }, null, 2) + "\n");
     return;
@@ -143,7 +157,11 @@ async function main() {
   }
   if (command === "studio") { studio(parsed.opts); return; }
   if (command === "extract") {
-    await extract(parsed.rest[0], parsed.opts);
+    try {
+      await extract(parsed.rest[0], parsed.opts);
+    } finally {
+      await analyzer.shutdown();
+    }
     return;
   }
   process.stderr.write("Comando desconhecido: " + command + "\n\n");

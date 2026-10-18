@@ -7,7 +7,11 @@ const crypto = require("crypto");
 const { spawn } = require("child_process");
 
 const ROOT = __dirname;
-const SHOTS = path.join(ROOT, "shots");
+const DATA_DIR = process.env.ATELIER_DATA_DIR || path.join(os.homedir(), ".atelier");
+const SHOTS = path.join(DATA_DIR, "shots");
+const CACHE_DIR = path.join(DATA_DIR, "cache");
+const CACHE_VERSION = 3;
+const CACHE_TTL = 24 * 60 * 60 * 1000;
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 const CHROMES = [
   "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
@@ -163,6 +167,9 @@ function EXTRACT() {
     if (cs.display === "grid") { grid += 1; }
     if (cs.display === "flex") { flex += 1; }
   });
+
+  var bodyBack = rgb(getComputedStyle(document.body).backgroundColor);
+  if (bodyBack) { add(bgMap, hex(bodyBack), innerWidth * innerHeight); }
 
   function typeOf(selector) {
     var el = document.querySelector(selector);
@@ -322,10 +329,156 @@ function EXTRACT() {
   };
 }
 
-module.exports = { analyze: analyze, normalizeUrl: normalizeUrl };
+function SNAPSHOT() {
+  function mode(map) {
+    var best = "";
+    var weight = 0;
+    Object.keys(map).forEach(function (key) {
+      if (map[key] > weight) { weight = map[key]; best = key; }
+    });
+    return best;
+  }
+  var all = Array.prototype.slice.call(document.querySelectorAll("body *")).slice(0, 1800);
+  var containers = {};
+  var pads = {};
+  var grid = 0;
+  var flex = 0;
+  all.forEach(function (el) {
+    var style = getComputedStyle(el);
+    var rect = el.getBoundingClientRect();
+    if (rect.width < 2 || rect.height < 2) { return; }
+    var maxWidth = parseFloat(style.maxWidth);
+    if (maxWidth >= 480 && maxWidth <= 2200) {
+      containers[style.maxWidth] = (containers[style.maxWidth] || 0) + 1;
+    }
+    if (/^(section|header|footer|main)$/i.test(el.tagName)) {
+      pads[style.paddingTop] = (pads[style.paddingTop] || 0) + 1;
+    }
+    if (style.display === "grid") { grid += 1; }
+    if (style.display === "flex") { flex += 1; }
+  });
+  var h1 = document.querySelector("h1");
+  var h2 = document.querySelector("h2");
+  var nav = document.querySelector("header nav, nav");
+  var navVisible = false;
+  var navLinks = 0;
+  if (nav) {
+    var nr = nav.getBoundingClientRect();
+    navVisible = getComputedStyle(nav).display !== "none" && nr.height > 0 && nr.width > 0;
+    navLinks = Array.prototype.slice.call(nav.querySelectorAll("a")).filter(function (a) {
+      var r = a.getBoundingClientRect();
+      return r.width > 0 && r.height > 0;
+    }).length;
+  }
+  return {
+    width: innerWidth,
+    h1: h1 ? getComputedStyle(h1).fontSize : "",
+    h2: h2 ? getComputedStyle(h2).fontSize : "",
+    body: getComputedStyle(document.body).fontSize,
+    container: mode(containers),
+    sectionPad: mode(pads),
+    grid: grid,
+    flex: flex,
+    navVisible: navVisible,
+    navLinks: navLinks,
+    scrollWidth: document.documentElement.scrollWidth
+  };
+}
 
-async function analyze(rawUrl) {
-  var url = normalizeUrl(rawUrl);
+function THEME() {
+  function norm(value) {
+    if (!value) { return null; }
+    var match = value.match(/rgba?\(([^)]+)\)/);
+    if (!match) { return null; }
+    var parts = match[1].split(",").map(function (x) { return parseFloat(x); });
+    if (parts.length < 3 || parts[3] === 0) { return null; }
+    function h(v) {
+      var s = Math.round(Math.max(0, Math.min(255, v))).toString(16);
+      return s.length < 2 ? "0" + s : s;
+    }
+    return "#" + h(parts[0]) + h(parts[1]) + h(parts[2]);
+  }
+  function top(map, limit) {
+    return Object.keys(map).map(function (key) { return { value: key, weight: map[key] }; })
+      .sort(function (a, b) { return b.weight - a.weight; }).slice(0, limit);
+  }
+  var els = Array.prototype.slice.call(document.querySelectorAll("body *")).slice(0, 1600);
+  var bg = {};
+  var text = {};
+  els.forEach(function (el) {
+    var style = getComputedStyle(el);
+    var rect = el.getBoundingClientRect();
+    var area = Math.max(1, Math.min(rect.width, 1600) * Math.min(rect.height, 1200));
+    var back = norm(style.backgroundColor);
+    if (back) { bg[back] = (bg[back] || 0) + area; }
+    if (el.children.length === 0) {
+      var content = (el.textContent || "").trim();
+      var color = norm(style.color);
+      if (content && color) { text[color] = (text[color] || 0) + Math.min(content.length, 200); }
+    }
+  });
+  var bodyBack = norm(getComputedStyle(document.body).backgroundColor);
+  if (bodyBack) { bg[bodyBack] = (bg[bodyBack] || 0) + innerWidth * innerHeight; }
+  var bodyText = norm(getComputedStyle(document.body).color);
+  if (bodyText) { text[bodyText] = (text[bodyText] || 0) + 400; }
+
+  return {
+    prefersDark: window.matchMedia("(prefers-color-scheme: dark)").matches,
+    bodyBg: getComputedStyle(document.body).backgroundColor,
+    bodyColor: getComputedStyle(document.body).color,
+    bg: top(bg, 10),
+    text: top(text, 10)
+  };
+}
+
+function buildDark(theme, lightPalette) {
+  if (!theme || !theme.bg || !theme.bg.length) {
+    return { supported: false, palette: null };
+  }
+  var darkPalette = buildPalette({ colors: { bg: theme.bg, text: theme.text, gradients: [] }, buttons: [] });
+  var changed = darkPalette.bg !== lightPalette.bg && (contrast(darkPalette.bg, lightPalette.bg) > 1.2 || darkPalette.dark !== lightPalette.dark);
+  return { supported: changed, palette: changed ? darkPalette : null };
+}
+
+module.exports = {
+  analyze: analyze,
+  normalizeUrl: normalizeUrl,
+  shutdown: shutdown,
+  SHOTS: SHOTS,
+  CACHE_DIR: CACHE_DIR
+};
+
+var browser = null;
+var idleTimer = null;
+var queue = Promise.resolve();
+
+function shutdown() {
+  return new Promise(function (resolve) {
+    if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
+    if (!browser) { resolve(); return; }
+    var current = browser;
+    browser = null;
+    try { current.proc.kill(); } catch (e) {}
+    try { fs.rmSync(current.profileDir, { recursive: true, force: true }); } catch (e) {}
+    setTimeout(resolve, 150);
+  });
+}
+
+function scheduleIdle() {
+  if (idleTimer) { clearTimeout(idleTimer); }
+  idleTimer = setTimeout(function () { shutdown(); }, 90000);
+  if (idleTimer.unref) { idleTimer.unref(); }
+}
+
+async function ensureBrowser() {
+  if (browser && browser.proc.exitCode === null) {
+    try {
+      await getJson("http://127.0.0.1:" + browser.port + "/json/version", {});
+      return browser;
+    } catch (error) {
+      await shutdown();
+    }
+  }
   var chrome = findChrome();
   var port = 9300 + Math.floor(Math.random() * 400);
   var profileDir = path.join(os.tmpdir(), "atelier-cdp-" + Date.now());
@@ -336,21 +489,87 @@ async function analyze(rawUrl) {
     "--remote-debugging-port=" + port, "--user-data-dir=" + profileDir,
     "--window-size=1440,1000", "about:blank"
   ], { stdio: "ignore", windowsHide: true });
-  var cdp = null;
+  await waitForVersion(port, 15000);
+  browser = { proc: proc, port: port, profileDir: profileDir };
+  proc.once("exit", function () {
+    if (browser && browser.proc === proc) { browser = null; }
+  });
+  return browser;
+}
+
+function cacheKey(url, options) {
+  var material = url + "|v" + CACHE_VERSION + "|responsive:" + (options.responsive === false ? "0" : "1") + "|dark:" + (options.dark === false ? "0" : "1");
+  return crypto.createHash("sha1").update(material).digest("hex");
+}
+
+function readCache(key) {
   try {
-    var version = await waitForVersion(port, 15000);
-    var target = await getJson("http://127.0.0.1:" + port + "/json/new?about:blank", { method: "PUT" });
+    var file = path.join(CACHE_DIR, key + ".json");
+    var stat = fs.statSync(file);
+    if (Date.now() - stat.mtimeMs > CACHE_TTL) { return null; }
+    var data = JSON.parse(fs.readFileSync(file, "utf8"));
+    if (!data || !data.profile) { return null; }
+    if (data.shot) {
+      var shotPath = path.join(SHOTS, path.basename(data.shot));
+      if (!fs.existsSync(shotPath)) { return null; }
+      data.shotPath = shotPath;
+      data.profile.shot = "shots/" + path.basename(data.shot);
+    }
+    data.cached = true;
+    data.cachedAt = data.cachedAt || stat.mtimeMs;
+    return data;
+  } catch (error) {
+    return null;
+  }
+}
+
+function writeCache(key, result) {
+  try {
+    fs.mkdirSync(CACHE_DIR, { recursive: true });
+    fs.writeFileSync(path.join(CACHE_DIR, key + ".json"), JSON.stringify({
+      profile: result.profile,
+      shot: result.shot,
+      cachedAt: Date.now()
+    }));
+  } catch (error) {}
+}
+
+async function analyze(rawUrl, options) {
+  var url = normalizeUrl(rawUrl);
+  var opts = options || {};
+  var key = cacheKey(url, opts);
+  if (!opts.refresh) {
+    var cached = readCache(key);
+    if (cached) { return cached; }
+  }
+  var job = queue.then(function () { return runAnalysis(url, opts, key); });
+  queue = job.catch(function () {});
+  return job;
+}
+
+async function runAnalysis(url, options, key) {
+  var current = await ensureBrowser();
+  var cdp = null;
+  var target = null;
+  try {
+    target = await getJson("http://127.0.0.1:" + current.port + "/json/new?about:blank", { method: "PUT" });
     cdp = await cdpSession(target.webSocketDebuggerUrl);
     await cdp.send("Page.enable");
     await cdp.send("Runtime.enable");
     await cdp.send("Network.enable");
     await cdp.send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
     await cdp.send("Network.setUserAgentOverride", { userAgent: UA, acceptLanguage: "pt-BR,pt;q=0.9,en;q=0.8" });
+    await cdp.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "light" }] });
+    try {
+      await cdp.send("Storage.clearDataForOrigin", { origin: new URL(url).origin, storageTypes: "all" });
+    } catch (error) {}
+    try { await cdp.send("Network.clearBrowserCookies"); } catch (error) {}
 
     var loaded = cdp.once("Page.loadEventFired", 22000);
     var nav = await cdp.send("Page.navigate", { url: url });
     if (nav && nav.errorText) { throw new Error("Falha ao abrir: " + nav.errorText); }
     await loaded.catch(function () {});
+    await cdp.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "light" }] }).catch(function () {});
     await sleep(1500);
     await cdp.send("Runtime.evaluate", {
       expression: "document.fonts && document.fonts.ready ? document.fonts.ready.then(function(){ return true; }) : true",
@@ -362,7 +581,8 @@ async function analyze(rawUrl) {
     var hash = crypto.createHash("sha1").update(url + Date.now()).digest("hex").slice(0, 12);
     fs.mkdirSync(SHOTS, { recursive: true });
     var fileName = hash + ".png";
-    fs.writeFileSync(path.join(SHOTS, fileName), Buffer.from(shot.data, "base64"));
+    var shotPath = path.join(SHOTS, fileName);
+    fs.writeFileSync(shotPath, Buffer.from(shot.data, "base64"));
 
     var res = await cdp.send("Runtime.evaluate", {
       expression: "(" + EXTRACT.toString() + ")()",
@@ -373,12 +593,56 @@ async function analyze(rawUrl) {
       throw new Error("Nao consegui ler o conteudo da pagina.");
     }
     var raw = res.result.value;
-    var profile = buildProfile(raw, url, "shots/" + fileName);
-    return { profile: profile, shot: "shots/" + fileName };
+    var lightPalette = buildPalette(raw);
+
+    var responsive = [];
+    if (options.responsive !== false) {
+      var snapAt = async function (width) {
+        await cdp.send("Emulation.setDeviceMetricsOverride", { width: width, height: 1000, deviceScaleFactor: 1, mobile: false });
+        await sleep(350);
+        var snap = await cdp.send("Runtime.evaluate", {
+          expression: "(" + SNAPSHOT.toString() + ")()",
+          returnByValue: true
+        });
+        if (snap && snap.result && snap.result.value) { responsive.push(snap.result.value); }
+      };
+      await snapAt(1440);
+      await snapAt(768);
+      await snapAt(390);
+      await cdp.send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
+      await sleep(200);
+    }
+
+    var dark = { supported: false, palette: null, prefersDark: null, error: "" };
+    if (options.dark !== false) {
+      try {
+        await cdp.send("Emulation.setEmulatedMedia", { media: "screen", features: [{ name: "prefers-color-scheme", value: "dark" }] });
+        await sleep(450);
+        var themed = await cdp.send("Runtime.evaluate", {
+          expression: "(" + THEME.toString() + ")()",
+          returnByValue: true
+        });
+        if (themed && themed.result && themed.result.value) {
+          dark = buildDark(themed.result.value, lightPalette);
+          dark.prefersDark = themed.result.value.prefersDark;
+        }
+      } catch (error) {
+        dark.error = error && error.message ? error.message : String(error);
+      } finally {
+        try { await cdp.send("Emulation.setEmulatedMedia", { features: [] }); } catch (error2) {}
+      }
+    }
+
+    var profile = buildProfile(raw, url, "shots/" + fileName, { responsive: responsive, dark: dark });
+    var result = { profile: profile, shot: "shots/" + fileName, shotPath: shotPath, cached: false };
+    writeCache(key, result);
+    return result;
   } finally {
     if (cdp) { cdp.close(); }
-    try { proc.kill(); } catch (e) {}
-    try { fs.rmSync(profileDir, { recursive: true, force: true }); } catch (e) {}
+    if (target && target.id) {
+      try { await fetch("http://127.0.0.1:" + current.port + "/json/close/" + target.id); } catch (error) {}
+    }
+    scheduleIdle();
   }
 }
 
@@ -466,7 +730,7 @@ function buildPalette(raw) {
   };
 }
 
-function buildProfile(raw, url, shot) {
+function buildProfile(raw, url, shot, extras) {
   var palette = buildPalette(raw);
   var fonts = (raw.fonts || []).map(function (f) { return f.value; });
   var display = (raw.type && raw.type.h1 && raw.type.h1.family) || fonts[0] || "Georgia";
@@ -521,6 +785,8 @@ function buildProfile(raw, url, shot) {
     layout: raw.layout || {},
     shape: raw.shape || {},
     motion: raw.motion || {},
+    responsive: (extras && extras.responsive ? extras.responsive.slice() : []).sort(function (a, b) { return a.width - b.width; }),
+    dark: (extras && extras.dark) || { supported: false, palette: null },
     scrollHeight: raw.scrollHeight || 0,
     confidence: "alta",
     note: "Perfil inferido do DOM renderizado em Chrome headless, com estilos computados. Nao replica conteudo, marca ou imagens do site analisado."

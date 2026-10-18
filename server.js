@@ -66,20 +66,35 @@ var server = http.createServer(function (req, res) {
     readBody(req).then(function (raw) {
       var body;
       try { body = JSON.parse(raw); } catch (e) { sendJson(res, 400, { ok: false, error: "JSON invalido." }); return; }
-      return analyzer.analyze(body.url).then(function (result) {
+      return analyzer.analyze(body.url, {
+        refresh: body.refresh === true,
+        responsive: body.responsive !== false,
+        dark: body.dark !== false
+      }).then(function (result) {
         var profile = result.profile;
         sendJson(res, 200, {
           ok: true,
+          cached: result.cached === true,
           profile: profile,
           shot: result.shot,
           design: report.buildDesign(profile),
           tokens: report.buildTokens(profile),
+          darkTokens: report.buildDarkTokens(profile),
           prompt: report.buildPrompt(profile),
           slug: report.slug(profile.siteName || profile.title)
         });
       });
     }).catch(function (error) {
       sendJson(res, 422, { ok: false, error: error.message || "Nao consegui analisar esta pagina." });
+    });
+    return;
+  }
+  if ((req.method === "GET" || req.method === "HEAD") && parsed.pathname.indexOf("/shots/") === 0) {
+    var name = path.basename(parsed.pathname);
+    fs.readFile(path.join(analyzer.SHOTS, name), function (error, data) {
+      if (error) { res.writeHead(404); res.end("404"); return; }
+      res.writeHead(200, { "Content-Type": "image/png", "Cache-Control": "public, max-age=3600" });
+      res.end(data);
     });
     return;
   }

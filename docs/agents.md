@@ -17,6 +17,30 @@ Teste rápido:
 
     node bin/atelier.js extract https://example.com --out .atelier/teste
 
+## Instalação sem clonar (npx)
+
+Se o pacote estiver no npm, o comando do servidor passa a ser:
+
+    {
+      "mcpServers": {
+        "atelier": {
+          "type": "stdio",
+          "command": "npx",
+          "args": ["-y", "--package=atelier-design-md", "atelier-mcp"]
+        }
+      }
+    }
+
+Enquanto o pacote nao estiver publicado, use o GitHub:
+
+    ["-y", "--package=github:amarosilvasouza1/atelier-design-md", "atelier-mcp"]
+
+CLI equivalente:
+
+    npx -y --package=github:amarosilvasouza1/atelier-design-md atelier extract https://exemplo.com --out .atelier/exemplo
+
+O cache e as capturas ficam em **~/.atelier/**; o cache dura 24 h e pode ser ignorado com --refresh.
+
 ## 1. Claude Code
 
 O arquivo **.mcp.json** na raiz já declara o servidor. Abra o Claude Code na pasta do projeto e aprove o servidor quando ele pedir.

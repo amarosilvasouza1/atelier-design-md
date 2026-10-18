@@ -14,7 +14,8 @@ const TOOL = {
     type: "object",
     properties: {
       url: { type: "string", description: "URL publica http(s) a analisar." },
-      outputDir: { type: "string", description: "Pasta relativa para salvar os arquivos. Padrao: .atelier/<slug>." }
+      outputDir: { type: "string", description: "Pasta relativa para salvar os arquivos. Padrao: .atelier/<slug>." },
+      refresh: { type: "boolean", description: "Ignora o cache de 24 h e analisa de novo." }
     },
     required: ["url"],
     additionalProperties: false
@@ -47,7 +48,7 @@ async function extract(args, cwd) {
   if (!args || typeof args.url !== "string" || !args.url.trim()) {
     throw new Error("Informe uma URL http(s).");
   }
-  const result = await analyzer.analyze(args.url);
+  const result = await analyzer.analyze(args.url, { refresh: args.refresh === true });
   const profile = result.profile;
   const slug = report.slug(profile.siteName || profile.title);
   const base = resolveDir(args.outputDir || path.join(".atelier", slug), cwd);
@@ -55,13 +56,17 @@ async function extract(args, cwd) {
 
   const design = report.buildDesign(profile);
   const tokens = report.buildTokens(profile);
+  const darkTokens = report.buildDarkTokens(profile);
   const prompt = report.buildPrompt(profile);
   fs.writeFileSync(path.join(base, "design.md"), design, "utf8");
   fs.writeFileSync(path.join(base, "tokens.css"), tokens, "utf8");
+  if (darkTokens) {
+    fs.writeFileSync(path.join(base, "tokens.dark.css"), darkTokens, "utf8");
+  }
   fs.writeFileSync(path.join(base, "prompt.md"), prompt, "utf8");
   fs.writeFileSync(path.join(base, "profile.json"), JSON.stringify(profile, null, 2), "utf8");
-  if (result.shot) {
-    const source = path.join(__dirname, result.shot);
+  if (result.shotPath) {
+    const source = result.shotPath;
     if (fs.existsSync(source)) {
       fs.copyFileSync(source, path.join(base, "screenshot.png"));
     }
@@ -71,9 +76,10 @@ async function extract(args, cwd) {
     "DESIGN.md gerado para " + (profile.siteName || profile.title) + ".",
     "URL: " + profile.finalUrl,
     "Modo: " + (profile.palette.dark ? "escuro" : "claro") + " | fundo " + profile.palette.bg + " | acento " + profile.palette.accent,
+    "Cache: " + (result.cached ? "reutilizado" : "novo"),
     "Tipografia: " + profile.typography.display + " / " + profile.typography.body,
     "Pasta: " + base,
-    "Arquivos: design.md, tokens.css, prompt.md, profile.json, screenshot.png",
+    "Arquivos: design.md, tokens.css" + (darkTokens ? ", tokens.dark.css" : "") + ", prompt.md, profile.json, screenshot.png",
     "",
     "Use o DESIGN.md como referencia de estrutura e linguagem visual; nao copie marca, textos ou imagens do site.",
     "",

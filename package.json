@@ -1,11 +1,11 @@
 {
   "name": "atelier-design-md",
-  "version": "1.1.0",
-  "private": true,
-  "description": "Estúdio de identidade visual e extrator de DESIGN.md a partir de qualquer URL, com Chrome headless.",
+  "version": "1.2.0",
+  "description": "Extrator de DESIGN.md via Chrome headless, com CLI e servidor MCP para Claude Code, Codex, opencode e outros agentes.",
   "main": "server.js",
   "bin": {
-    "atelier": "bin/atelier.js"
+    "atelier": "bin/atelier.js",
+    "atelier-mcp": "mcp-server.js"
   },
   "scripts": {
     "start": "node server.js",
@@ -14,9 +14,37 @@
     "test:cli": "node scripts/test-cli.js",
     "test:mcp": "node scripts/test-mcp.js"
   },
+  "files": [
+    "analyzer.js",
+    "report.js",
+    "server.js",
+    "mcp-server.js",
+    "bin/",
+    "scripts/",
+    "docs/",
+    "index.html",
+    "extrator.html",
+    "styles.css",
+    "specimen.css",
+    "extrator.css",
+    "app.js",
+    "extrator.js",
+    "AGENTS.md",
+    "CLAUDE.md",
+    ".mcp.json",
+    "opencode.json"
+  ],
   "engines": {
     "node": ">=20"
   },
-  "keywords": ["design-system", "design-md", "mcp", "claude-code", "codex", "opencode", "chrome", "cdp", "tokens"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/amarosilvasouza1/atelier-design-md.git"
+  },
+  "homepage": "https://github.com/amarosilvasouza1/atelier-design-md#readme",
+  "bugs": {
+    "url": "https://github.com/amarosilvasouza1/atelier-design-md/issues"
+  },
+  "keywords": ["design-system", "design-md", "mcp", "claude-code", "codex", "opencode", "chrome", "cdp", "design-tokens"],
   "license": "MIT"
 }

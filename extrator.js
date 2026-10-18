@@ -128,6 +128,8 @@
 
     els.chips.innerHTML = "";
     var chips = (p.tech || []).concat([c.dark ? "modo escuro" : "modo claro", "H1 " + Math.round(parseFloat(t.h1.size) || 0) + "px"]);
+    if (p.dark && p.dark.supported) { chips.push("tema escuro"); }
+    if (p.responsive && p.responsive.length > 1) { chips.push(p.responsive.length + " larguras"); }
     chips.forEach(function (label) {
       var span = document.createElement("span");
       span.textContent = label;
