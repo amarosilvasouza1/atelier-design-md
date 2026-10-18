@@ -1,77 +1,130 @@
-# Atelier — estúdio e extrator de sistemas de design
+# Atelier — DESIGN.md para agentes
 
-Duas ferramentas locais que transformam referências visuais em arquivos de design reutilizáveis.
-HTML, CSS e JavaScript puros no cliente; Node no servidor; Chrome/Edge headless para ler páginas reais.
+Ferramenta local que abre uma URL em Chrome headless, extrai a estrutura, as cores e a tipografia do site e gera um **DESIGN.md** com tokens, regras e prompt de implementação.
 
-## 1. Estúdio (`/index.html`)
+Funciona de três formas:
 
-Componha uma identidade editorial e exporte:
+- **MCP (stdio)** para Claude Code, Codex, opencode, Cursor, VS Code, Gemini CLI e Windsurf.
+- **CLI** para qualquer terminal ou script de agente.
+- **Interface web** com estúdio de identidade e extrator visual.
 
-- `DESIGN.md` com essência, paleta, escala tipográfica, componentes, movimento, regras e prompt.
-- `tokens.css` com variáveis e estilos-base.
-- Prévia ao vivo de uma landing page completa, com 6 paletas (contraste WCAG calculado), 3 vozes tipográficas, proporção, cantos e textura.
-- Estado salvo no navegador; "Surpreender-me" gera combinações.
+## O que sai
 
-## 2. Extrator (`/extrator.html`)
+Cada análise gera:
 
-Cole uma URL. O servidor abre a página num Chrome headless, lê o DOM renderizado e os estilos computados, e devolve:
+- **design.md** — arquitetura da página, paleta com contraste WCAG, escala tipográfica, layout, componentes, movimento, regras e prompt.
+- **tokens.css** — variáveis CSS prontas.
+- **prompt.md** — briefing para um agente de código.
+- **profile.json** — perfil bruto da análise.
+- **screenshot.png** — captura do primeiro viewport.
 
-- **Estrutura** — cabeçalho, hero, seções (h2/h3), ações e rodapé em ordem.
-- **Cores** — fundo, superfície, tinta, apoio, acento, linha, com contraste real.
-- **Tipografia** — famílias, escala (h1–h3, corpo), pesos, entrelinha e tracking.
-- **Layout e forma** — container, respiro de seção, raio, sombras, transições.
-- **Arquivos** — `DESIGN.md`, `tokens.css`, prompt de implementação e `.json` com o perfil bruto.
-- **Captura** do primeiro viewport e histórico local das últimas URLs.
+## Instalação
 
-Use os arquivos como contexto no Cursor, Claude Code, Codex, v0 ou Lovable. O perfil descreve o sistema visual; **não** autoriza reutilizar marca, textos ou imagens do site analisado.
+Requisitos: Node 20+ e Chrome ou Edge.
 
-## Como rodar
+    git clone https://github.com/amarosilvasouza1/atelier-design-md.git
+    cd atelier-design-md
+    npm install
 
-```powershell
-cd atelier
-node server.js
-```
+Não há dependências externas; o comando acima só prepara o pacote.
 
-Abra http://127.0.0.1:4321 (extrator) ou http://127.0.0.1:4321/estudio (estúdio).
+## CLI
 
-Requisitos: Node 20+ e Chrome ou Edge instalado. O servidor procura o navegador em caminhos padrão do Windows.
+    node bin/atelier.js extract https://stripe.com --out .atelier/stripe
 
-## API
+Saída na tela, sem gravar arquivos:
 
-`POST /api/analyze` com `{ "url": "https://exemplo.com" }` devolve:
+    node bin/atelier.js extract linear.app > DESIGN.md
 
-```json
-{ "ok": true, "profile": {}, "shot": "shots/....png", "design": "...", "tokens": "...", "prompt": "...", "slug": "..." }
-```
+JSON completo (perfil + conteúdos + caminhos):
 
-`GET /shots/<arquivo>.png` serve as capturas.
+    node bin/atelier.js extract https://linear.app --json
+
+Opções: --out, --json, --tokens, --prompt, --no-shot, --quiet.
+
+Para instalar o comando global:
+
+    npm link
+    atelier extract https://stripe.com --out .atelier/stripe
+
+O estúdio web continua disponível:
+
+    npm start
+    # http://127.0.0.1:4321  (extrator)
+    # http://127.0.0.1:4321/estudio  (estúdio)
+
+## MCP
+
+O servidor **mcp-server.js** expõe a ferramenta **extract_design_system**:
+
+- **url** (obrigatória): página pública http(s).
+- **outputDir** (opcional): pasta relativa dentro do projeto. Padrão: .atelier/<slug>.
+
+Configurações já incluídas no repositório:
+
+| Arquivo | Cliente |
+| --- | --- |
+| .mcp.json | Claude Code e clientes MCP genéricos |
+| opencode.json | opencode |
+| .cursor/mcp.json | Cursor |
+| .vscode/mcp.json | VS Code / Copilot |
+
+Exemplo de configuração com caminho absoluto:
+
+    {
+      "mcpServers": {
+        "atelier": {
+          "type": "stdio",
+          "command": "node",
+          "args": ["C:/caminho/atelier-design-md/mcp-server.js"]
+        }
+      }
+    }
+
+Guia por agente, incluindo Codex e Gemini CLI: [docs/agents.md](docs/agents.md).
+
+Claude Code também tem o comando **/design-md <url>** em .claude/commands/design-md.md.
+O repositório inclui **AGENTS.md** e **CLAUDE.md** para orientar o comportamento do agente.
 
 ## Estrutura
 
-```
-atelier/
-  index.html        estúdio
-  extrator.html     extrator
-  styles.css        interface do estúdio (tema escuro)
-  specimen.css      página de exemplo (container queries)
-  extrator.css      interface do extrator
-  app.js            estado e exportação do estúdio
-  extrator.js       fluxo de análise, relatório e exportação
-  analyzer.js       Chrome headless via CDP + extração de tokens
-  report.js         geração de DESIGN.md, tokens.css e prompt
-  server.js         estático + API /api/analyze
-  shots/            capturas das análises
-```
+    atelier/
+      index.html         estúdio
+      extrator.html      extrator
+      styles.css         interface do estúdio
+      specimen.css       página de exemplo
+      extrator.css       interface do extrator
+      app.js             estado e exportação do estúdio
+      extrator.js        fluxo do extrator
+      analyzer.js        Chrome headless via CDP + extração
+      report.js          geração de DESIGN.md, tokens e prompt
+      server.js          servidor web + API
+      bin/atelier.js     CLI
+      mcp-server.js      servidor MCP stdio
+      scripts/           testes de CLI e MCP
+      docs/agents.md     instalação por agente
+      shots/             capturas locais (ignoradas no Git)
+
+## Testes
+
+    npm run test:cli
+    npm run test:mcp
+
+Os testes abrem example.com de verdade e exigem Chrome/Edge e internet.
 
 ## Limites e privacidade
 
-- A análise busca a URL a partir desta máquina; a página precisa ser pública (sem login).
-- Sites com bloqueio anti-bot, CAPTCHA ou paywall podem falhar — o erro é mostrado na interface.
-- A captura é do primeiro viewport; hover, modais e páginas internas não entram no relatório.
-- Fontes proprietárias viram família + fallback sugerido no `DESIGN.md`.
-- Nada é enviado a serviços de IA: a extração é local (Chrome + Node).
+- A análise busca a URL a partir desta máquina; a página precisa ser pública.
+- Sites com bloqueio anti-bot, CAPTCHA ou login podem falhar.
+- A captura é do primeiro viewport, em 1440x1000.
+- Fontes proprietárias viram família + fallback sugerido.
+- Nada é enviado a serviços de IA: extração local com Chrome + Node.
+- O DESIGN.md descreve o sistema visual; não autoriza reutilizar marca, textos ou imagens do site analisado.
 
 ## Verificado
 
-- Estúdio: interações, exportação, mobile 390 px e auditoria axe sem violações.
-- Extrator: análises reais de stripe.com e linear.app; paleta, estrutura e arquivos gerados conferidos; abas, cópia e download exercitados.
+- CLI: extração real de example.com com design.md, tokens.css, prompt.md, profile.json e screenshot.
+- MCP: initialize, tools/list e tools/call testados via stdio.
+- Web: desktop e 390 px, auditoria axe sem violações.
+
+Licença MIT.

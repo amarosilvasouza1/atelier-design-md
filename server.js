@@ -7,7 +7,7 @@ const analyzer = require("./analyzer");
 const report = require("./report");
 
 const ROOT = __dirname;
-const PORT = 4321;
+const PORT = Number(process.env.PORT) || 4321;
 const TYPES = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",

@@ -1,4 +1,5 @@
 node_modules/
+.atelier/
 shots/*.png
 !shots/.gitkeep
 *.tmp
