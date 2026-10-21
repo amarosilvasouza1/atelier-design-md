@@ -46,5 +46,5 @@
     "url": "https://github.com/amarosilvasouza1/atelier-design-md/issues"
   },
   "keywords": ["design-system", "design-md", "mcp", "claude-code", "codex", "opencode", "chrome", "cdp", "design-tokens"],
-  "license": "MIT"
+  "license": "Apache-2.0"
 }

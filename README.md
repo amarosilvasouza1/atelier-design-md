@@ -144,4 +144,4 @@ Os testes abrem example.com de verdade e exigem Chrome/Edge e internet.
 - Fontes proprietárias viram família + fallback sugerido.
 - O DESIGN.md descreve o sistema visual; não autoriza reutilizar marca, textos ou imagens do site analisado.
 
-Licença MIT.
+Licença Apache 2.0.
